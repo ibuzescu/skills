@@ -216,7 +216,7 @@ Act only on errors, and do not report these warnings: they are expected on a ske
 
 ## Find the resources
 
-A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Action app`, `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, and a connector box's connection.
+A box whose kind runs a deployed resource cannot be built without one: every kind in [Box kinds](#box-kinds) except `Action app`, `Execute script` and `Execute HTTP request`, including Business rule, plus a queue, a Data Fabric entity, a connector box's connection, and an Action app box whose Action App the user named.
 <!--skill-flavor:lookup-no-login:start-->
 When this run already found no `uip login` (the upload failed for it), skip the lookup and mark each such box `not checked`.
 Otherwise run every lookup in **one** Bash call.
@@ -241,6 +241,7 @@ It is the turn's last tool call: before it, read [gate-reply-template.md](gate-r
   Match each connector box on `Connector` only, since a connector's key can contain another service's name (the Slack connector's key contains `salesforce`).
   Prefer `State: Enabled`; among those, the folder the step names, then `IsDefault: Yes`.
   An empty result for a box's service marks the box `none yet`; never say the tenant has no such connection.
+- **Action Apps:** only for an Action app box whose app the user named: `uip solution resources list --kind App --search "<term>" --output json`, matched on `Name`; the row's `Folder` is the app's folder.
 - **Business rules:** `uip rules list --all-folders --limit 10000 --output-filter "[].{Name:Name,FolderPath:FolderPath}" --output json`, matched on name and folder path.
 - **Data Fabric entities:** `uip df entities list --include-folders --output-filter "[].{Name:Name,FolderId:FolderId}" --output json`, matched on `Name` alone; the row carries a folder id, not a folder name, so name no folder on the box's line.
   The box also needs the `UiPath Data Fabric` connection from the connections lookup.
@@ -260,7 +261,7 @@ Then give each box one status:
 - When several fit, name the best two and ask which one.
 - When none fits, write `none yet, create it or name one`: the user creates it or names one, or picks *Change it*.
 - `Action app`, `Execute script` and `Execute HTTP request` boxes need no resource: write `no resource needed` and look nothing up for them.
-  An Action app box gets it even when the user named an Action App, overriding the first bullet: it is built as an inline form ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)).
+  The exception is an Action app box whose app the user named: it binds that app ([Human task outcomes](bpmn-runtime.md#human-task-outcomes)), so look it up and give it a status like any other box.
 
 A row fits only when both hold: its kind is the box's kind (match `Type` as above), and its name and folder show it does the step the box describes.
 A name that merely shares a keyword does not fit: a process called `invoice-cleanup` in an unrelated project's folder is not the invoice-recording step.
@@ -292,8 +293,8 @@ Before you edit it again, download the cloud copy and compare it, as [Check the 
 <!--skill-flavor:draft-build-merge:start-->
   When this turn's source was decompiled from the current target (the user's canvas copy), or an earlier `merge` wrote the target, finish through `merge` as for any existing process. Only a skeleton that reached the target through `compile` alone is compiled and formatted again as the loop does: its source carries the `init` stub's decompile stamp, so `merge` refuses it (`MERGE_ORIGINAL_CHANGED`).
 <!--skill-flavor:draft-build-merge:end-->
-  An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says, never `.humanTask(id, { app })`.
-  When the user named an Action App, say under `Assumed` that the task is an inline form, not their app, and that Studio Web can switch it to the app.
+  An Action app box becomes an inline-form `.humanTask`, as [Human task outcomes](bpmn-runtime.md#human-task-outcomes) says.
+  When the user named an Action App, it becomes `.humanTask(id, { app: '<Name>', folder: '<Folder>' })` with the app the gate named.
   A box the gate marked `none yet` gets a placeholder binding: the resource's symbolic name, with no tenant value, as [Draft with an unresolved connector](connectors.md#7-draft-with-an-unresolved-connector) shows for a connection; the final report lists it under `Needs:`.
   An unanswered which-of-two takes the first resource named, reported under `Assumed`.
   A `not checked` box is looked up now, with the commands of [Find the resources](#find-the-resources).
